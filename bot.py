@@ -13,6 +13,7 @@ class MyBot(telepot.helper.ChatHandler):
         self.command = False
         self.get = False
         self.cd = False
+        self.python = False
         self.USER = sys.argv[1]
         self.TIMEOUT = 60
         self.DOWNLOAD = sys.argv[3] if sys.argv[3][-1] == '/' else sys.argv[3] + "/"
@@ -40,12 +41,17 @@ class MyBot(telepot.helper.ChatHandler):
                     self.cd = True
                     bot.sendMessage(chat_id, "You are in `{}`\nTo where you want to go?".format(os.getcwd()),
                                     parse_mode="Markdown")
+                elif text == "/python":
+                    self.python = True
+                    bot.sendMessage(chat_id, "Send-me the expression!")
                 elif self.get:
                     self.get_file(text, chat_id)
                 elif self.command:
                     self.exec_command(text, chat_id)
                 elif self.cd:
                     self.change_wd(text, chat_id)
+                elif self.python:
+                    self.python_eval(text, chat_id)
                 else:
                     bot.sendMessage(chat_id, "I'm waiting instructions!! :)")
             elif content_type in self.types:
@@ -90,6 +96,14 @@ class MyBot(telepot.helper.ChatHandler):
         except Exception as e:
             bot.sendMessage(chat, "`An error was occurred:\n{}`".format(e), parse_mode="Markdown")
         self.cd = False
+
+    def python_eval(self, expr, chat):
+        try:
+            r = eval(expr)
+            bot.sendMessage(chat, "`{}`".format(r), parse_mode="Markdown")
+        except Exception as e:
+            bot.sendMessage(chat, "`An error was occurred:\n{}`".format(e), parse_mode="Markdown")
+        self.python = False
 
 
 if __name__ == "__main__":
