@@ -13,6 +13,7 @@ class MyBot(telepot.helper.ChatHandler):
         self.get = False
         self.first = True
         self.USER = sys.argv[1]
+        self.TIMEOUT = 60
         self.DOWNLOAD = sys.argv[3] if sys.argv[3][-1] == '/' else sys.argv[3] + "/"
         self.types = ["audio", "document", "photo", "video", "voice", "video_note"]
 
@@ -47,13 +48,16 @@ class MyBot(telepot.helper.ChatHandler):
 
     def exec_command(self, command, chat):
         args = command.split(" ")
-        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        out = out.decode('utf-8')
-        err = err.decode('utf-8')
-        out = "No output" if out == "" else "\n" + out
-        err = "No errors" if err == "" else err
-        bot.sendMessage(chat, "`Error: {}\nOutput: {}`".format(err, out), parse_mode="Markdown")
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
+        try:
+            out, err = process.communicate(input=subprocess.DEVNULL, timeout=self.TIMEOUT)
+            out = out.decode('utf-8')
+            err = err.decode('utf-8')
+            out = "No output" if out == "" else "\n" + out
+            err = "No errors" if err == "" else err
+            bot.sendMessage(chat, "`Error: {}\nOutput: {}`".format(err, out), parse_mode="Markdown")
+        except Exception as e:
+            bot.sendMessage(chat, "`An error was occurred:\n{}`".format(e), parse_mode="Markdown")
         self.command = False
 
     def get_file(self, path, chat):
