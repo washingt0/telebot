@@ -34,7 +34,17 @@ class MyBot(telepot.helper.ChatHandler):
         else:
             if content_type == "text":
                 text = msg['text']
-                if text == "/command":
+                if text == "/start" or text == "/help":
+                    bot.sendMessage(chat_id, """
+Hello, I can do a few things like:
+/command execute a command on your computer
+/get send to you a file
+/python evaluate a python expression
+/torrent add torrents to be downloaded
+/ltorrent list current torrents
+/rtorrent remove a torrent
+                    """)
+                elif text == "/command":
                     self.command = True
                     bot.sendMessage(chat_id, "What can I do for you?")
                 elif text == "/get":
