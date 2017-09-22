@@ -14,6 +14,9 @@ class MyBot(telepot.helper.ChatHandler):
         self.get = False
         self.cd = False
         self.python = False
+        self.torrent = False
+        self.t_torrent = None
+        self.rtorrent = False
         self.USER = sys.argv[1]
         self.TIMEOUT = 60
         self.DOWNLOAD = sys.argv[3] if sys.argv[3][-1] == '/' else sys.argv[3] + "/"
@@ -44,6 +47,14 @@ class MyBot(telepot.helper.ChatHandler):
                 elif text == "/python":
                     self.python = True
                     bot.sendMessage(chat_id, "Send-me the expression!")
+                elif text == "/torrent":
+                    self.torrent = True
+                    bot.sendMessage(chat_id, "Send-me the magnet!")
+                elif text == "/ltorrent":
+                    self.list_torrent(chat_id)
+                elif text == "/rtorrent":
+                    self.rtorrent = True
+                    bot.sendMessage(chat_id, "Send-me the torrent id that you want remove")
                 elif self.get:
                     self.get_file(text, chat_id)
                 elif self.command:
@@ -52,6 +63,10 @@ class MyBot(telepot.helper.ChatHandler):
                     self.change_wd(text, chat_id)
                 elif self.python:
                     self.python_eval(text, chat_id)
+                elif self.torrent:
+                    self.add_torrent(text, chat_id)
+                elif self.rtorrent:
+                    self.rem_torrent(text, chat_id)
                 else:
                     bot.sendMessage(chat_id, "I'm waiting instructions!! :)")
             elif content_type in self.types:
@@ -88,6 +103,10 @@ class MyBot(telepot.helper.ChatHandler):
         else:
             name = str(int(time.time()))
         self.exec_command("wget -q -O " + self.DOWNLOAD + name + " " + url, chat)
+        if file['mime_type'] == "application/x-bittorrent":
+            bot.sendMessage(chat, "Want start download? [y/n]")
+            self.torrent = True
+            self.t_torrent = self.DOWNLOAD + name
 
     def change_wd(self, path, chat):
         try:
@@ -104,6 +123,42 @@ class MyBot(telepot.helper.ChatHandler):
         except Exception as e:
             bot.sendMessage(chat, "`An error was occurred:\n{}`".format(e), parse_mode="Markdown")
         self.python = False
+
+    @staticmethod
+    def check_transmission():
+        process = subprocess.Popen(["ps -eaf | grep transmission-daemon"], stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
+        out, err = process.communicate()
+        out = out.decode('utf-8').split("\n")
+        is_running = False
+        for i in out:
+            if "grep" not in i and i != "":
+                is_running = True
+        return is_running
+
+    def start_torrent(self):
+        if not self.check_transmission():
+            subprocess.Popen("transmission-daemon")
+
+    def add_torrent(self, text, chat):
+        self.start_torrent()
+        if text == "y" or "magnet" in text:
+            torrent = self.t_torrent if self.t_torrent is not None and text == "y" else text
+            self.exec_command("transmission-remote --add " + torrent, chat)
+        elif text == "n":
+            bot.sendMessage(chat, "Okay")
+        else:
+            bot.sendMessage(chat, "Invalid option")
+        self.torrent = False
+        self.t_torrent = None
+
+    def list_torrent(self, chat):
+        self.start_torrent()
+        self.exec_command("transmission-remote -l", chat)
+
+    def rem_torrent(self, text, chat):
+        self.start_torrent()
+        self.exec_command("transmission-remote -t {} -r".format(text), chat)
 
 
 if __name__ == "__main__":
