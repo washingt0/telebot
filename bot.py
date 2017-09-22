@@ -2,6 +2,7 @@ import time
 import subprocess
 import telepot
 import sys
+import os
 from telepot.loop import MessageLoop
 from telepot.delegate import per_chat_id, create_open, pave_event_space
 
@@ -11,7 +12,7 @@ class MyBot(telepot.helper.ChatHandler):
         super(MyBot, self).__init__(*args, **kwargs)
         self.command = False
         self.get = False
-        self.first = True
+        self.cd = False
         self.USER = sys.argv[1]
         self.TIMEOUT = 60
         self.DOWNLOAD = sys.argv[3] if sys.argv[3][-1] == '/' else sys.argv[3] + "/"
@@ -35,10 +36,16 @@ class MyBot(telepot.helper.ChatHandler):
                 elif text == "/get":
                     self.get = True
                     bot.sendMessage(chat_id, "What file you want?")
+                elif text == "/cd":
+                    self.cd = True
+                    bot.sendMessage(chat_id, "You are in `{}`\nTo where you want to go?".format(os.getcwd()),
+                                    parse_mode="Markdown")
                 elif self.get:
                     self.get_file(text, chat_id)
                 elif self.command:
                     self.exec_command(text, chat_id)
+                elif self.cd:
+                    self.change_wd(text, chat_id)
                 else:
                     bot.sendMessage(chat_id, "I'm waiting instructions!! :)")
             elif content_type in self.types:
@@ -76,6 +83,14 @@ class MyBot(telepot.helper.ChatHandler):
             name = str(int(time.time()))
         self.exec_command("wget -q -O " + self.DOWNLOAD + name + " " + url, chat)
 
+    def change_wd(self, path, chat):
+        try:
+            os.chdir(path)
+            bot.sendMessage(chat, "Actual path is: `{}`".format(os.getcwd()), parse_mode="Markdown")
+        except Exception as e:
+            bot.sendMessage(chat, "`An error was occurred:\n{}`".format(e), parse_mode="Markdown")
+        self.cd = False
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
@@ -90,5 +105,3 @@ if __name__ == "__main__":
     print("Listening...")
     while True:
         time.sleep(10)
-
-
