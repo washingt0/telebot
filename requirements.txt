@@ -3,5 +3,5 @@ async-timeout==1.4.0
 chardet==3.0.4
 multidict==3.2.0
 telepot==12.3
-urllib3==1.22
+urllib3==1.26.5
 yarl==0.12.0
